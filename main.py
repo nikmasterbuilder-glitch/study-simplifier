@@ -6,7 +6,7 @@ from google import genai
 
 app = FastAPI()
 
-client = genai.Client(api_key="AIzaSyBO_mPsKI-wa6Kpj-jkKAHsBZrLuQj7VWM")
+client = genai.Client(api_key="GOOGLE_API_KEY")
 
 
 class URLRequest(BaseModel):
