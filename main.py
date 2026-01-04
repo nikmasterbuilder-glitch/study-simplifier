@@ -3,6 +3,7 @@ from pydantic import BaseModel
 import requests
 from bs4 import BeautifulSoup
 from google import genai
+from google.genai import types
 
 app = FastAPI()
 
