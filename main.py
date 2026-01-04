@@ -2,12 +2,12 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import requests
 from bs4 import BeautifulSoup
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 
 app = FastAPI()
 
-client = genai.Client(api_key="GOOGLE_API_KEY")
+genai.configure(api_key="GOOGLE_API_KEY")
+model = genai.GenerativeModel("gemini-2.5-flash")
 
 
 class URLRequest(BaseModel):
@@ -58,10 +58,7 @@ def summarize_study(data: URLRequest):
 
     prompt = PROMPT_TEMPLATE.format(abstract=abstract_text)
 
-    ai_response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=[prompt]
-    )
+    ai_response = model.generate_content(prompt)
 
     return {
         "summary": ai_response.text,
