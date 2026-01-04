@@ -4,9 +4,44 @@ import requests
 from bs4 import BeautifulSoup
 import google.generativeai as genai
 import os
+import logging
+import traceback
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
+logging.basicConfig(level=logging.INFO)  # logs INFO and above
+logger = logging.getLogger(__name__)
+
 print("API key loaded:", bool(os.getenv("GOOGLE_API_KEY")))
 
 app = FastAPI()
+
+app = FastAPI()
+
+
+@app.middleware("http")
+async def log_exceptions(request: Request, call_next):
+    try:
+        response = await call_next(request)
+        return response
+    except Exception as e:
+        # Log full traceback
+        logger.error(f"Error on request {request.method} {request.url}")
+        logger.error(traceback.format_exc())
+        # Optional: return a friendly JSON response instead of raw 500
+        return JSONResponse(
+            status_code=500,
+            content={"message": "Internal server error. Check logs for details."}
+        )
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Incoming request: {request.method} {request.url}")
+    response = await call_next(request)
+    logger.info(f"Response status: {response.status_code}")
+    return response
+
 
 genai.configure(api_key="GOOGLE_API_KEY")
 model = genai.GenerativeModel("gemini-2.5-flash")
