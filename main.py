@@ -3,6 +3,8 @@ from pydantic import BaseModel
 import requests
 from bs4 import BeautifulSoup
 import google.generativeai as genai
+import os
+print("API key loaded:", bool(os.getenv("GOOGLE_API_KEY")))
 
 app = FastAPI()
 
