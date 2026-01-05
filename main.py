@@ -8,7 +8,7 @@ import logging
 import traceback
 import requests
 
-HF_API_URL = "https://api-inference.huggingface.co/models/facebook/bart-large-cnn"
+HF_API_URL = "https://api-inference.huggingface.co/inference/summarization"
 HF_API_KEY = os.getenv("HF_API_KEY")
 
 headers = {"Authorization": f"Bearer {HF_API_KEY}"}
@@ -98,7 +98,7 @@ Abstract:
 
 
 def summarize_with_hf(prompt: str) -> str:
-    url = "https://api-inference.huggingface.co/models/facebook/bart-large-cnn"
+    url = "https://api-inference.huggingface.co/inference/summarization"
     headers = {
         "Authorization": f"Bearer {HF_API_KEY}",
         "Content-Type": "application/json"
@@ -121,26 +121,20 @@ def summarize_with_hf(prompt: str) -> str:
 
 
 @app.post("/summarize")
-def summarize_study(data: URLRequest):
-    # Fetch page
-    response = requests.get(data.url, timeout=15)
+def summarize_with_hf(prompt: str) -> str:
+    url = "https://api-inference.huggingface.co/inference/summarization"
+
+    headers = {
+        "Authorization": f"Bearer {HF_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "google/flan-t5-small",
+        "inputs": prompt
+    }
+
+    response = requests.post(url, headers=headers, json=payload)
     response.raise_for_status()
 
-    soup = BeautifulSoup(response.text, "html.parser")
-    abstract_div = soup.find("div", class_="abstract-content")
-
-    if not abstract_div:
-        return {"error": "Abstract not found"}
-
-    abstract_text = abstract_div.get_text(strip=True)
-
-    # Call Hugging Face safely
-    try:
-        summary = summarize_with_hf(abstract_text)
-    except requests.exceptions.HTTPError as e:
-        return {"error": f"Hugging Face API request failed: {str(e)}"}
-
-    return {
-        "summary": summary,
-        "original_abstract": abstract_text
-    }
+    result = response.json()
+    return result[0]["generated_text"]
