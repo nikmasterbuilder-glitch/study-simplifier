@@ -16,7 +16,7 @@ HF_API_KEY = os.environ.get("HF_API_KEY")
 if not HF_API_KEY:
     raise RuntimeError("HF_API_KEY is not set")
 
-HF_MODEL = "facebook/bart-large-cnn"
+HF_MODEL = "sshleifer/distilbart-cnn-12-6"
 
 # -------------------- APP --------------------
 app = FastAPI()
@@ -81,7 +81,14 @@ def summarize_with_hf(prompt: str) -> str:
         "Authorization": f"Bearer {HF_API_KEY}",
         "Content-Type": "application/json"
     }
-    payload = {"inputs": prompt}
+    payload = {
+        "inputs": prompt,
+        "parameters": {
+            "max_length": 200,
+            "min_length": 80,
+            "do_sample": False
+        }
+    }
 
     response = requests.post(url, headers=headers, json=payload, timeout=60)
     response.raise_for_status()
@@ -105,8 +112,7 @@ def summarize_study(data: URLRequest):
 
     abstract_text = abstract_div.get_text(strip=True)
 
-    prompt = PROMPT_TEMPLATE.format(abstract=abstract_text)
-    summary = summarize_with_hf(prompt)
+    summary = summarize_with_hf(abstract_text)
 
     return {
         "summary": summary,
