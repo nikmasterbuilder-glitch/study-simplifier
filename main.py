@@ -8,7 +8,7 @@ import logging
 import traceback
 import requests
 
-HF_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
+HF_API_URL = "https://api-inference.huggingface.co/models/facebook/bart-large-cnn"
 HF_API_KEY = os.getenv("HF_API_KEY")
 
 headers = {"Authorization": f"Bearer {HF_API_KEY}"}
@@ -98,7 +98,7 @@ Abstract:
 
 
 def summarize_with_hf(prompt: str) -> str:
-    url = "https://api-inference.huggingface.co/models/google/flan-t5-base"
+    url = "https://api-inference.huggingface.co/models/facebook/bart-large-cnn"
     headers = {
         "Authorization": f"Bearer {HF_API_KEY}",
         "Content-Type": "application/json"
