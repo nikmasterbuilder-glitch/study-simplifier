@@ -8,7 +8,7 @@ import logging
 import traceback
 import requests
 
-HF_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-small"
+HF_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
 HF_API_KEY = os.getenv("HF_API_KEY")
 
 headers = {"Authorization": f"Bearer {HF_API_KEY}"}
@@ -134,7 +134,11 @@ def summarize_study(data: URLRequest):
 
     abstract_text = abstract_div.get_text(strip=True)
 
-    summary = summarize_with_hf(abstract_text)
+    # Call Hugging Face safely
+    try:
+        summary = summarize_with_hf(abstract_text)
+    except requests.exceptions.HTTPError as e:
+        return {"error": f"Hugging Face API request failed: {str(e)}"}
 
     return {
         "summary": summary,
