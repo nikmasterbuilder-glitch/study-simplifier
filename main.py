@@ -6,6 +6,29 @@ from bs4 import BeautifulSoup
 import os
 import logging
 import traceback
+import requests
+
+HF_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-small"
+HF_API_KEY = os.getenv("HF_API_KEY")
+
+headers = {"Authorization": f"Bearer {HF_API_KEY}"}
+
+
+def summarize_with_hf(text: str) -> str:
+    payload = {
+        "inputs": text,
+        "parameters": {"max_new_tokens": 100},  # controls summary length
+    }
+
+    response = requests.post(HF_API_URL, headers=headers, json=payload)
+
+    # Check for errors
+    response.raise_for_status()
+
+    # HF returns a JSON list of dicts with "generated_text"
+    data = response.json()
+    return data[0]["generated_text"]
+
 
 # -------------------- LOGGING --------------------
 logging.basicConfig(level=logging.INFO)
@@ -16,7 +39,6 @@ HF_API_KEY = os.environ.get("HF_API_KEY")
 if not HF_API_KEY:
     raise RuntimeError("HF_API_KEY is not set")
 
-HF_MODEL = "sshleifer/distilbart-xsum-12-6"
 
 # -------------------- APP --------------------
 app = FastAPI()
@@ -76,8 +98,7 @@ Abstract:
 
 
 def summarize_with_hf(prompt: str) -> str:
-    url = f"https://api-inference.huggingface.co/pipeline/summarization/{HF_MODEL}"
-
+    url = "https://api-inference.huggingface.co/models/google/flan-t5-small"
     headers = {
         "Authorization": f"Bearer {HF_API_KEY}",
         "Content-Type": "application/json"
@@ -85,16 +106,16 @@ def summarize_with_hf(prompt: str) -> str:
     payload = {
         "inputs": prompt,
         "parameters": {
-            "max_length": 200,
-            "min_length": 80,
+            "max_new_tokens": 100,  # controls summary length
             "do_sample": False
         }
     }
 
     response = requests.post(url, headers=headers, json=payload, timeout=60)
-    response.raise_for_status()
+    response.raise_for_status()  # throws error if request fails
 
-    return response.json()[0]["summary_text"]
+    result = response.json()
+    return result[0]["generated_text"]
 
 # -------------------- ROUTE --------------------
 
