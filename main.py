@@ -98,7 +98,7 @@ Abstract:
 
 
 def summarize_with_hf(prompt: str) -> str:
-    url = "https://api-inference.huggingface.co/models/google/flan-t5-small"
+    url = "https://api-inference.huggingface.co/models/google/flan-t5-base"
     headers = {
         "Authorization": f"Bearer {HF_API_KEY}",
         "Content-Type": "application/json"
