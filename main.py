@@ -16,7 +16,7 @@ HF_API_KEY = os.environ.get("HF_API_KEY")
 if not HF_API_KEY:
     raise RuntimeError("HF_API_KEY is not set")
 
-HF_MODEL = "facebook/bart-large-cnn"
+HF_MODEL = "sshleifer/distilbart-xsum-12-6"
 
 # -------------------- APP --------------------
 app = FastAPI()
