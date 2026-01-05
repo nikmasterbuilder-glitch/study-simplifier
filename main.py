@@ -1,22 +1,27 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import requests
 from bs4 import BeautifulSoup
-import google.generativeai as genai
 import os
 import logging
 import traceback
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
 
-logging.basicConfig(level=logging.INFO)  # logs INFO and above
+# -------------------- LOGGING --------------------
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-print("API key loaded:", bool(os.getenv("GOOGLE_API_KEY")))
+# -------------------- ENV VAR --------------------
+HF_API_KEY = os.environ.get("HF_API_KEY")
+if not HF_API_KEY:
+    raise RuntimeError("HF_API_KEY is not set")
 
+HF_MODEL = "facebook/bart-large-cnn"
+
+# -------------------- APP --------------------
 app = FastAPI()
 
-app = FastAPI()
+# -------------------- MIDDLEWARE --------------------
 
 
 @app.middleware("http")
@@ -24,11 +29,9 @@ async def log_exceptions(request: Request, call_next):
     try:
         response = await call_next(request)
         return response
-    except Exception as e:
-        # Log full traceback
+    except Exception:
         logger.error(f"Error on request {request.method} {request.url}")
         logger.error(traceback.format_exc())
-        # Optional: return a friendly JSON response instead of raw 500
         return JSONResponse(
             status_code=500,
             content={"message": "Internal server error. Check logs for details."}
@@ -42,47 +45,56 @@ async def log_requests(request: Request, call_next):
     logger.info(f"Response status: {response.status_code}")
     return response
 
-
-genai.configure(api_key="GOOGLE_API_KEY")
-model = genai.GenerativeModel("gemini-2.5-flash")
+# -------------------- MODELS --------------------
 
 
 class URLRequest(BaseModel):
     url: str
 
 
+# -------------------- PROMPT --------------------
 PROMPT_TEMPLATE = """
-You are rewriting a scientific abstract for someone with no medical or scientific background.
+Rewrite the following scientific abstract for someone with no medical or scientific background.
 
 Rules:
 - Use only information explicitly stated in the abstract.
-- Do not add background knowledge or explanations.
-- Do not give medical advice or recommendations.
-- Do not judge whether the treatment or supplement works.
-- Do not use technical jargon; replace it with simple everyday language.
+- Do not add background knowledge.
+- Do not give medical advice.
+- Do not judge effectiveness.
+- Replace technical language with simple everyday wording.
 
 Format:
-- Maximum of 8 bullet points
-- Each bullet should be 1 sentence
+- Max 8 bullet points
+- Each bullet one sentence
 - Neutral, descriptive tone
-
-Focus only on:
-- What was studied
-- How the study was conducted
-- What was observed or measured
-- The study’s stated conclusion
 
 Abstract:
 {abstract}
 """
 
+# -------------------- HF CALL --------------------
+
+
+def summarize_with_hf(prompt: str) -> str:
+    url = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
+    headers = {
+        "Authorization": f"Bearer {HF_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {"inputs": prompt}
+
+    response = requests.post(url, headers=headers, json=payload, timeout=60)
+    response.raise_for_status()
+
+    return response.json()[0]["summary_text"]
+
+# -------------------- ROUTE --------------------
+
 
 @app.post("/summarize")
 def summarize_study(data: URLRequest):
-    url = data.url
-
     # Fetch page
-    response = requests.get(url, timeout=15)
+    response = requests.get(data.url, timeout=15)
     response.raise_for_status()
 
     soup = BeautifulSoup(response.text, "html.parser")
@@ -94,10 +106,9 @@ def summarize_study(data: URLRequest):
     abstract_text = abstract_div.get_text(strip=True)
 
     prompt = PROMPT_TEMPLATE.format(abstract=abstract_text)
-
-    ai_response = model.generate_content(prompt)
+    summary = summarize_with_hf(prompt)
 
     return {
-        "summary": ai_response.text,
+        "summary": summary,
         "original_abstract": abstract_text
     }
