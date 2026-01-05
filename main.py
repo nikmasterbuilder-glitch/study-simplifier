@@ -16,7 +16,7 @@ HF_API_KEY = os.environ.get("HF_API_KEY")
 if not HF_API_KEY:
     raise RuntimeError("HF_API_KEY is not set")
 
-HF_MODEL = "sshleifer/distilbart-cnn-12-6"
+HF_MODEL = "facebook/bart-large-cnn"
 
 # -------------------- APP --------------------
 app = FastAPI()
@@ -76,7 +76,8 @@ Abstract:
 
 
 def summarize_with_hf(prompt: str) -> str:
-    url = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
+    url = f"https://api-inference.huggingface.co/pipeline/summarization/{HF_MODEL}"
+
     headers = {
         "Authorization": f"Bearer {HF_API_KEY}",
         "Content-Type": "application/json"
